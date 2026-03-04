@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Ramen Master - 조연주</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f8f9fa; margin: 0; display: flex; flex-direction: column; height: 100vh; color: #333; }
+        header { background: #e74c3c; color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { display: flex; flex: 1; overflow: hidden; }
+        
+        /* 왼쪽: 선택창 (설정) */
+        .sidebar { width: 350px; padding: 25px; background: white; border-right: 1px solid #ddd; overflow-y: auto; box-shadow: 2px 0 5px rgba(0,0,0,0.05); }
+        .section { margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .section:last-child { border-bottom: none; }
+        label { display: block; margin: 12px 0 8px; font-weight: bold; color: #c0392b; }
+        select, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 10px; font-size: 14px; }
+        .chk-group { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; cursor: pointer; }
+        
+        /* 오른쪽: 타이머 및 현황창 */
+        .main-content { flex: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #fffcf0 0%, #fff 100%); position: relative; }
+        .timer-display { font-size: 100px; font-weight: 800; color: #2c3e50; margin: 20px 0; font-variant-numeric: tabular-nums; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+        .status-msg { font-size: 26px; color: #d35400; text-align: center; min-height: 80px; font-weight: bold; line-height: 1.4; }
+        .step-info { font-size: 20px; color: #7f8c8d; background: #ecf0f1; padding: 5px 20px; border-radius: 20px; margin-bottom: 15px; }
+        
+        .controls { display: flex; gap: 15px; width: 100%; max-width: 500px; margin-top: 30px; }
+        .btn-start { background: #27ae60; color: white; border: none; cursor: pointer; font-size: 20px; font-weight: bold; transition: 0.3s; height: 60px; border-radius: 10px; }
+        .btn-next { background: #3498db; color: white; border: none; cursor: pointer; font-size: 20px; font-weight: bold; transition: 0.3s; height: 60px; border-radius: 10px; }
+        .btn-start:hover { background: #2ecc71; transform: translateY(-2px); }
+        .btn-next:hover { background: #2980b9; transform: translateY(-2px); }
+        .btn-start:disabled, .btn-next:disabled { background: #bdc3c7; cursor: not-allowed; opacity: 0.6; transform: none; }
+        
+        footer { background: #34495e; color: #ecf0f1; text-align: center; padding: 15px; font-size: 14px; font-weight: 300; }
+        .dev-info { color: #f1c40f; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🍜 Smart Ramen Cooking Master</h1>
+    <div style="font-size: 1.1em; font-weight: bold; letter-spacing: 1px;">20260304 조연주</div>
+</header>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="section">
+            <label>🌐 Language / 언어 선택</label>
+            <select id="langSelect" onchange="resetApp()">
+                <option value="ko-KR">한국어 (Korean)</option>
+                <option value="en-US">English</option>
+                <option value="zh-CN">中文 (Chinese)</option>
+                <option value="es-ES">Español (Spanish)</option>
+                <option value="de-DE">Deutsch (German)</option>
+                <option value="ja-JP">日本語 (Japanese)</option>
+                <option value="vi-VN">Tiếng Việt (Vietnamese)</option>
+            </select>
+        </div>
+
+        <div class="section">
+            <label>🔥 Heat Source / 열원</label>
+            <select id="heatSource">
+                <option value="induction">인덕션 (Induction - Fast)</option>
+                <option value="gas">가스레인지 (Gas Range - Standard)</option>
+            </select>
+        </div>
+
+        <div class="section">
+            <label>🍜 Ramen Type / 라면 종류</label>
+            <select id="ramenType">
+                <option value="270">일반 라면 (Normal - 4m 30s)</option>
+                <option value="300">굵은 면 (Thick - 5m)</option>
+                <option value="120">얇은 면 (Thin - 2m)</option>
+                <option value="301">볶음면 (Stir-fry - 5m + Sauce)</option>
+            </select>
+        </div>
+
+        <div class="section">
+            <label>🥬 Toppings / 토핑 추가</label>
+            <label class="chk-group"><input type="checkbox" id="riceCake"> 떡국떡 (Rice Cake)</label>
+            <label class="chk-group"><input type="checkbox" id="greenOnion"> 파 (Green Onion)</label>
+            <label class="chk-group"><input type="checkbox" id="cheese"> 치즈 (Cheese)</label>
+        </div>
+
+        <div class="section">
+            <label>🥚 Egg Option / 계란</label>
+            <select id="eggOption">
+                <option value="none">넣지 않음 (None)</option>
+                <option value="soft">반숙 (Soft Boiled)</option>
+                <option value="hard">완숙 (Hard Boiled)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div id="stepInfo" class="step-info">Ready to Cook</div>
+        <div id="statusMsg" class="status-msg">설정을 완료한 후 [시작] 버튼을 눌러주세요.</div>
+        <div id="timer" class="timer-display">00:00</div>
+        
+        <div class="controls">
+            <button id="startBtn" class="btn-start" onclick="startCurrentStep()">시작 (START)</button>
+            <button id="nextBtn" class="btn-next" onclick="handleNextStep()" disabled>다음 단계 (NEXT STEP)</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    © 2026 Smart Ramen System | Developer: <span class="dev-info">20260304 조연주</span>
+</footer>
+
+<script>
+    const translations = {
+        "ko-KR": { water: "물을 끓여주세요.", noodles: "면과 스프를 넣어주세요.", egg: "지금 계란을 넣어주세요.", topping: "선택하신 토핑을 모두 넣어주세요.", finish: "조리가 끝났습니다! 맛있게 드세요.", start: "시작", next: "다음 단계", boil: "물 끓이기", cook: "면 익히기", ready: "준비되었습니다. 시작을 누르세요." },
+        "en-US": { water: "Please boil the water.", noodles: "Add noodles and soup base.", egg: "Add the egg now.", topping: "Add all selected toppings.", finish: "Cooking complete! Enjoy your meal.", start: "Start", next: "Next Step", boil: "Boiling Water", cook: "Cooking Noodles", ready: "Ready. Press Start." },
+        "zh-CN": { water: "请烧开水。", noodles: "放入面条和调料包。", egg: "现在放入鸡蛋。", topping: "放入所有选好的配料。", finish: "烹饪完成！请享用。", start: "开始", next: "下一步", boil: "烧水", cook: "煮面", ready: "准备好了。请按开始。" },
+        "ja-JP": { water: "水を沸騰させてください。", noodles: "麺とスープを入れてください。", egg: "今、卵を入れてください。", topping: "選んだトッピングをすべて入れてください。", finish: "調理が完了しました！召し上がれ。", start: "開始", next: "次の段階", boil: "お湯を沸かす", cook: "麺을 茹でる", ready: "準備ができました。開始を押してください。" },
+        "vi-VN": { water: "Vui lòng đun sôi nước.", noodles: "Cho mì và gói gia vị vào.", egg: "Cho trứng vào ngay bây giờ.", topping: "Cho tất cả các topping đã chọn vào.", finish: "Nấu xong rồi! Chúc bạn ngon miệng.", start: "Bắt đầu", next: "Bước tiếp theo", boil: "Đun nước", cook: "Nấu mì", ready: "Đã sẵn sàng. Nhấn Bắt đầu." }
+    };
+
+    let currentStep = 0;
+    let timerInterval;
+    let steps = [];
+
+    function getMsg(key) {
+        const lang = document.getElementById('langSelect').value;
+        return (translations[lang] || translations["en-US"])[key];
+    }
+
+    function speak(text) {
+        // 이모티콘을 읽지 않도록 필터링
+        const cleanText = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+        const msg = new SpeechSynthesisUtterance(cleanText);
+        msg.lang = document.getElementById('langSelect').value;
+        window.speechSynthesis.speak(msg);
+    }
+
+    function initSteps() {
+        steps = [];
+        const heat = document.getElementById('heatSource').value;
+        const boilTime = (heat === 'induction') ? 180 : 240; 
+        
+        steps.push({ name: getMsg('boil'), msg: getMsg('water'), time: boilTime });
+        
+        const noodleTime = parseInt(document.getElementById('ramenType').value);
+        steps.push({ name: getMsg('cook'), msg: getMsg('noodles'), time: noodleTime });
+
+        if (document.getElementById('riceCake').checked || document.getElementById('greenOnion').checked || document.getElementById('cheese').checked) {
+            steps.push({ name: "Topping", msg: getMsg('topping'), time: 30 });
+        }
+
+        if (document.getElementById('eggOption').value !== 'none') {
+            steps.push({ name: "Egg", msg: getMsg('egg'), time: 40 });
+        }
+    }
+
+    function startCurrentStep() {
+        if (steps.length === 0) initSteps();
+        
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('nextBtn').disabled = false;
+        
+        const step = steps[currentStep];
+        document.getElementById('stepInfo').innerText = `Step ${currentStep + 1}: ${step.name}`;
+        document.getElementById('statusMsg').innerText = step.msg;
+        speak(step.msg);
+
+        let timeLeft = step.time;
+        updateTimerDisplay(timeLeft);
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay(timeLeft);
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                speak("Step complete.");
+                document.getElementById('statusMsg').innerText = "Step Complete! Click [Next Step]";
+            }
+        }, 1000);
+    }
+
+    function handleNextStep() {
+        clearInterval(timerInterval);
+        currentStep++;
+        
+        if (currentStep < steps.length) {
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('timer').innerText = "00:00";
+            const readyMsg = getMsg('ready');
+            document.getElementById('statusMsg').innerText = readyMsg;
+            document.getElementById('stepInfo').innerText = "Next step is ready";
+        } else {
+            const finalMsg = getMsg('finish');
+            document.getElementById('statusMsg').innerText = finalMsg;
+            speak(finalMsg);
+            alert(finalMsg);
+            resetApp();
+        }
+    }
+
+    function updateTimerDisplay(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        document.getElementById('timer').innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function resetApp() {
+        clearInterval(timerInterval);
+        currentStep = 0;
+        steps = [];
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('nextBtn').disabled = true;
+        document.getElementById('timer').innerText = "00:00";
+        document.getElementById('statusMsg').innerText = "Ready to start.";
+    }
+</script>
+
+</body>
+</html>
